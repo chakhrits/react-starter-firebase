@@ -13,6 +13,22 @@ class LoginForm extends React.Component {
     }
   }
 
+  componentDidMount() {
+    firebase.auth().onAuthStateChanged(user => {
+      if (user) {
+        this.setState({ currentUser: user })
+      }
+    })
+  }
+
+  onInputChange = e => {
+    const { name, value } = e.target
+
+    this.setState({
+      [name]: value
+    })
+  }
+
   onHandleSubmit = e => {
     e.preventDefault()
 
@@ -25,31 +41,51 @@ class LoginForm extends React.Component {
         this.setState({
           currentUser: res.user
         })
-        console.log(res)
       })
-      .catch(error => {
-        console.log(error)
+      .catch(err => {
+        this.setState({
+          errorMessage: err.message
+        })
       })
   }
 
-  onInputChange = e => {
-    const { value, name } = e.target
-    this.setState = {
-      [name]: value
-    }
+  logout = e => {
+    e.preventDefault()
+
+    firebase
+      .auth()
+      .signOut()
+      .then(res => {
+        this.setState({
+          currentUser: null,
+          errorMessage: ''
+        })
+      })
+  }
+
+  onCancel = () => {
+    this.formRef.reset()
   }
 
   render() {
-    const { currentUser } = this.state
+    const { errorMessage, currentUser } = this.state
 
     if (currentUser) {
-      return <p>Hello {currentUser.email}</p>
+      return (
+        <div>
+          <p>Hello {currentUser.email}</p>
+          <button onClick={this.logout}>Logout</button>
+        </div>
+      )
     }
     return (
       <section className="section container">
         <div className="columns is-centered">
           <div className="column is-half">
-            <form onSubmit={this.onHandleSubmit}>
+            <form
+              onSubmit={this.onHandleSubmit}
+              ref={element => (this.formRef = element)}
+            >
               <div className="field">
                 <label className="label">Email</label>
                 <div className="control">
@@ -74,12 +110,18 @@ class LoginForm extends React.Component {
                 </div>
               </div>
 
+              {errorMessage ? (
+                <p className="help is-danger">{errorMessage}</p>
+              ) : null}
+
               <div className="field is-grouped">
                 <div className="control">
                   <button className="button is-link">Submit</button>
                 </div>
                 <div className="control">
-                  <button className="button is-text">Cancel</button>
+                  <button className="button is-text" onClick={this.onCancel}>
+                    Cancel
+                  </button>
                 </div>
               </div>
             </form>
